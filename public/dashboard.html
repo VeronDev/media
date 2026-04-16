@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHANTOM - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0f0f0f;
+            color: #fff;
+        }
+
+        .navbar {
+            background: rgba(0,0,0,0.95);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: #fff;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+        }
+
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+        }
+
+        .badge-user { background: #333; }
+        .badge-dev { background: #667eea; }
+        .badge-admin { background: #dc2626; }
+
+        .container {
+            max-width: 800px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .card {
+            background: #1a1a1a;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stats {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .stat {
+            background: #2a2a2a;
+            padding: 1rem;
+            border-radius: 10px;
+            text-align: center;
+            flex: 1;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .url-input {
+            width: 100%;
+            padding: 1rem;
+            background: #2a2a2a;
+            border: 1px solid #333;
+            border-radius: 10px;
+            color: #fff;
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        .preview {
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .preview img {
+            width: 100%;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+
+        .btn-video {
+            background: #dc2626;
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .btn-audio {
+            background: #10b981;
+            flex: 1;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+        }
+
+        .upgrade-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            text-align: center;
+        }
+
+        .upgrade-btn {
+            background: white;
+            color: #667eea;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        .api-key-display {
+            background: #2a2a2a;
+            padding: 1rem;
+            border-radius: 10px;
+            font-family: monospace;
+            margin: 1rem 0;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🎭 PHANTOM</div>
+        <div class="nav-links">
+            <a href="/dashboard">Dashboard</a>
+            <a href="/developer" id="devLink" style="display:none;">API</a>
+            <a href="/admin-panel" id="adminLink" style="display:none;">Admin</a>
+            <div class="user-info">
+                <img class="user-avatar" id="userAvatar" src="">
+                <span id="userName"></span>
+                <span class="badge" id="userBadge"></span>
+            </div>
+            <a href="/auth/logout">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <h2>Welcome, <span id="welcomeName"></span>!</h2>
+            <div class="stats">
+                <div class="stat">
+                    <div class="stat-value" id="todayCount">0</div>
+                    <div>Today</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="dailyLimit">10</div>
+                    <div>Limit</div>
+                </div>
+                <div class="stat">
+                    <div class="stat-value" id="remainingCount">10</div>
+                    <div>Remaining</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>Download Media</h3>
+            <input type="text" id="urlInput" class="url-input" placeholder="Paste URL (YouTube, Instagram, TikTok...)">
+            <button class="download-btn" onclick="fetchInfo()">Get Media Info →</button>
+
+            <div id="preview" class="preview">
+                <img id="thumbnail" src="">
+                <h3 id="title"></h3>
+                <div class="button-group">
+                    <button id="downloadVideoBtn" class="btn-video">📹 Download Video</button>
+                    <button id="downloadAudioBtn" class="btn-audio">🎵 Download Audio</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="upgradeSection" class="card upgrade-card" style="display:none;">
+            <h3>🔑 Become a Developer</h3>
+            <p>Get your API key to integrate PHANTOM into your apps</p>
+            <button class="upgrade-btn" onclick="becomeDeveloper()">🚀 Get API Key Now</button>
+        </div>
+
+        <div id="devSection" class="card" style="display:none;">
+            <h3>✅ Your Developer API Key</h3>
+            <div class="api-key-display" id="apiKeyDisplay"></div>
+            <button class="upgrade-btn" onclick="copyApiKey()">📋 Copy</button>
+            <button class="upgrade-btn" onclick="regenerateApiKey()">🔄 Regenerate</button>
+            <p style="margin-top: 1rem; font-size: 0.75rem;">Rate limit: 500 requests/day</p>
+        </div>
+    </div>
+
+    <script>
+        let currentData = null;
+
+        async function loadUser() {
+            try {
+                const res = await fetch('/user/me');
+                const data = await res.json();
+                
+                if (!data.success) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                const user = data.user;
+                document.getElementById('userName').innerText = user.name;
+                document.getElementById('userAvatar').src = user.picture;
+                document.getElementById('welcomeName').innerText = user.name.split(' ')[0];
+                document.getElementById('todayCount').innerText = user.daily_requests;
+                document.getElementById('dailyLimit').innerText = user.daily_limit;
+                document.getElementById('remainingCount').innerText = user.remaining;
+                
+                const badge = document.getElementById('userBadge');
+                if (user.role === 'admin') {
+                    badge.innerText = 'ADMIN';
+                    badge.className = 'badge badge-admin';
+                    document.getElementById('adminLink').style.display = 'block';
+                    document.getElementById('devLink').style.display = 'block';
+                } else if (user.role === 'developer') {
+                    badge.innerText = 'DEVELOPER';
+                    badge.className = 'badge badge-dev';
+                    document.getElementById('devLink').style.display = 'block';
+                    document.getElementById('devSection').style.display = 'block';
+                    document.getElementById('apiKeyDisplay').innerText = user.api_key;
+                } else {
+                    badge.innerText = 'USER';
+                    badge.className = 'badge badge-user';
+                    document.getElementById('upgradeSection').style.display = 'block';
+                }
+            } catch (error) {
+                window.location.href = '/login';
+            }
+        }
+
+        async function fetchInfo() {
+            const url = document.getElementById('urlInput').value;
+            if (!url) {
+                alert('Enter a URL');
+                return;
+            }
+            
+            const res = await fetch('/api/download', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ url })
+            });
+            
+            const data = await res.json();
+            
+            if (data.success) {
+                currentData = data;
+                document.getElementById('preview').style.display = 'block';
+                document.getElementById('thumbnail').src = data.thumbnail;
+                document.getElementById('title').innerText = data.title;
+                
+                document.getElementById('downloadVideoBtn').onclick = () => {
+                    if (data.video_url) window.open(data.video_url);
+                    else alert('Video not available');
+                };
+                
+                document.getElementById('downloadAudioBtn').onclick = () => {
+                    if (data.audio_url) window.open(data.audio_url);
+                    else alert('Audio not available');
+                };
+                
+                loadUser(); // Refresh stats
+            } else {
+                alert(data.error);
+            }
+        }
+
+        async function becomeDeveloper() {
+            const res = await fetch('/user/become-developer', { method: 'POST' });
+            const data = await res.json();
+            
+            if (data.success) {
+                alert('You are now a developer!');
+                location.reload();
+            } else {
+                alert(data.error);
+            }
+        }
+
+        async function regenerateApiKey() {
+            if (!confirm('Regenerate API key? Old key will stop working.')) return;
+            const res = await fetch('/user/regenerate-key', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('apiKeyDisplay').innerText = data.api_key;
+                alert('New API key generated!');
+            }
+        }
+
+        function copyApiKey() {
+            const key = document.getElementById('apiKeyDisplay').innerText;
+            navigator.clipboard.writeText(key);
+            alert('Copied!');
+        }
+
+        loadUser();
+    </script>
+</body>
+</html>

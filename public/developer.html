@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHANTOM - Developer Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0f0f0f;
+            color: #fff;
+        }
+
+        .navbar {
+            background: rgba(0,0,0,0.95);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .card {
+            background: #1a1a1a;
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .api-key-box {
+            background: #2a2a2a;
+            padding: 1rem;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 1.2rem;
+            text-align: center;
+            margin: 1rem 0;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0.25rem;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+        }
+
+        .code-block {
+            background: #2a2a2a;
+            padding: 1rem;
+            border-radius: 10px;
+            font-family: monospace;
+            margin: 1rem 0;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid #333;
+        }
+
+        th {
+            color: #667eea;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🎭 PHANTOM Developer</div>
+        <div>
+            <a href="/dashboard" style="color:white; margin-right:1rem;">Dashboard</a>
+            <a href="/auth/logout" style="color:white;">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="card">
+            <h2>🔑 Your API Key</h2>
+            <div class="api-key-box" id="apiKeyDisplay">Loading...</div>
+            <button class="btn" onclick="copyApiKey()">📋 Copy</button>
+            <button class="btn btn-danger" onclick="regenerateKey()">🔄 Regenerate</button>
+        </div>
+
+        <div class="card">
+            <h2>📊 Usage Stats</h2>
+            <div class="stats" style="display:flex; gap:1rem; margin-top:1rem;">
+                <div class="stat" style="background:#2a2a2a; padding:1rem; border-radius:10px; flex:1; text-align:center;">
+                    <div style="font-size:2rem; font-weight:bold; color:#667eea;" id="todayRequests">0</div>
+                    <div>Today's Requests</div>
+                </div>
+                <div class="stat" style="background:#2a2a2a; padding:1rem; border-radius:10px; flex:1; text-align:center;">
+                    <div style="font-size:2rem; font-weight:bold; color:#667eea;" id="dailyLimit">500</div>
+                    <div>Daily Limit</div>
+                </div>
+                <div class="stat" style="background:#2a2a2a; padding:1rem; border-radius:10px; flex:1; text-align:center;">
+                    <div style="font-size:2rem; font-weight:bold; color:#10b981;" id="remaining">500</div>
+                    <div>Remaining</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📖 API Usage Example</h2>
+            <div class="code-block">
+                curl -X POST https://your-domain.com/api/v1/download \<br>
+                &nbsp;&nbsp;-H "Authorization: Bearer YOUR_API_KEY" \<br>
+                &nbsp;&nbsp;-H "Content-Type: application/json" \<br>
+                &nbsp;&nbsp;-d '{"url": "https://youtube.com/watch?v=..."}'
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📝 Recent API Calls</h2>
+            <table id="recentCalls">
+                <thead>
+                    <tr><th>Time</th><th>Endpoint</th><th>Platform</th><th>Status</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td colspan="4">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const apiKey = localStorage.getItem('apiKey');
+
+        if (!apiKey) {
+            window.location.href = '/login';
+        }
+
+        async function loadData() {
+            const res = await fetch('/api/v1/me', {
+                headers: { 'Authorization': `Bearer ${apiKey}` }
+            });
+            const data = await res.json();
+            
+            if (data.success) {
+                document.getElementById('apiKeyDisplay').innerText = data.user.api_key;
+                document.getElementById('todayRequests').innerText = data.user.daily_requests;
+                document.getElementById('dailyLimit').innerText = data.user.daily_limit;
+                document.getElementById('remaining').innerText = data.user.remaining;
+            }
+        }
+
+        async function regenerateKey() {
+            if (!confirm('Regenerate API key? Old key will stop working.')) return;
+            
+            const res = await fetch('/user/regenerate-key', { method: 'POST' });
+            const data = await res.json();
+            
+            if (data.success) {
+                localStorage.setItem('apiKey', data.api_key);
+                document.getElementById('apiKeyDisplay').innerText = data.api_key;
+                alert('New API key generated!');
+            }
+        }
+
+        function copyApiKey() {
+            const key = document.getElementById('apiKeyDisplay').innerText;
+            navigator.clipboard.writeText(key);
+            alert('Copied!');
+        }
+
+        loadData();
+    </script>
+</body>
+</html>

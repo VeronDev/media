@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHANTOM - Admin Panel</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: #0f0f0f;
+            color: #fff;
+        }
+
+        .navbar {
+            background: rgba(0,0,0,0.95);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: #1a1a1a;
+            padding: 1.5rem;
+            border-radius: 15px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        .card {
+            background: #1a1a1a;
+            border-radius: 20px;
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid #333;
+        }
+
+        th {
+            color: #667eea;
+        }
+
+        .btn {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 0.25rem 0.5rem;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0.125rem;
+        }
+
+        .btn-danger {
+            background: #dc2626;
+        }
+
+        .btn-success {
+            background: #10b981;
+        }
+
+        .platform-status {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-available { background: #10b981; }
+        .status-maintenance { background: #f59e0b; }
+        .status-error { background: #ef4444; }
+        .status-disabled { background: #6b7280; }
+
+        .progress-bar {
+            background: #2a2a2a;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            background: #667eea;
+            height: 20px;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="logo">🎭 PHANTOM Admin</div>
+        <div>
+            <a href="/dashboard" style="color:white; margin-right:1rem;">Dashboard</a>
+            <a href="/admin-panel" style="color:#dc2626; margin-right:1rem;">Admin</a>
+            <a href="/auth/logout" style="color:white;">Logout</a>
+        </div>
+    </nav>
+
+    <div class="container">
+        <!-- Admin API Key Section -->
+        <div class="card">
+            <h2>🔑 Your Admin API Key</h2>
+            <div style="background:#2a2a2a; padding:1rem; border-radius:10px; font-family:monospace; margin:1rem 0;" id="adminApiKey">Loading...</div>
+            <button class="btn" onclick="copyAdminKey()">📋 Copy</button>
+            <button class="btn btn-danger" onclick="regenerateAdminKey()">🔄 Regenerate</button>
+            <p style="margin-top:0.5rem; font-size:0.75rem; color:#999;">Unlimited rate limit • Use for API access</p>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="stats-grid" id="statsGrid">
+            <div class="stat-card"><div class="stat-value" id="totalUsers">-</div><div>Total Users</div></div>
+            <div class="stat-card"><div class="stat-value" id="totalDevs">-</div><div>Developers</div></div>
+            <div class="stat-card"><div class="stat-value" id="totalDownloads">-</div><div>Downloads Today</div></div>
+            <div class="stat-card"><div class="stat-value" id="totalApiCalls">-</div><div>API Calls Today</div></div>
+        </div>
+
+        <!-- Platform Stats Today -->
+        <div class="card">
+            <h2>📊 Platform Requests (Today)</h2>
+            <div id="platformStats"></div>
+        </div>
+
+        <!-- Platform Control -->
+        <div class="card">
+            <h2>🎮 Platform Control</h2>
+            <table id="platformTable">
+                <thead><tr><th>Platform</th><th>Status</th><th>Today</th><th>Action</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- All Users -->
+        <div class="card">
+            <h2>👥 All Users</h2>
+            <table id="usersTable">
+                <thead><tr><th>Email</th><th>Role</th><th>API Key</th><th>Today</th><th>Actions</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Banned Users -->
+        <div class="card">
+            <h2>🚫 Banned Users</h2>
+            <table id="bannedTable">
+                <thead><tr><th>Email</th><th>Reason</th><th>Expires</th><th>Action</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+
+        <!-- Top Users -->
+        <div class="card">
+            <h2>🔥 Top Users (Today)</h2>
+            <table id="topUsersTable">
+                <thead><tr><th>Rank</th><th>Email</th><th>Role</th><th>Requests</th></tr></thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        async function loadAdminData() {
+            // Load stats
+            const statsRes = await fetch('/admin/stats');
+            const stats = await statsRes.json();
+            
+            if (stats.success) {
+                document.getElementById('totalUsers').innerText = stats.stats.total_users;
+                document.getElementById('totalDevs').innerText = stats.stats.total_developers;
+                document.getElementById('totalDownloads').innerText = stats.stats.total_downloads_today;
+                
+                // Platform stats
+                let platformHtml = '';
+                stats.stats.platform_stats_today.forEach(p => {
+                    const percent = (p.total_requests / stats.stats.total_downloads_today * 100).toFixed(1);
+                    platformHtml += `
+                        <div style="margin-bottom:1rem;">
+                            <div>${p.platform} - ${p.total_requests} requests (${percent}%)</div>
+                            <div class="progress-bar"><div class="progress-fill" style="width: ${percent}%;"></div></div>
+                        </div>
+                    `;
+                });
+                document.getElementById('platformStats').innerHTML = platformHtml || '<p>No data yet</p>';
+            }
+            
+            // Load users
+            const usersRes = await fetch('/admin/users');
+            const users = await usersRes.json();
+            
+            if (users.success) {
+                const userRows = users.users.map(u => `
+                    <tr>
+                        <td>${u.email}</td>
+                        <td>${u.role}</td>
+                        <td>${u.api_key ? u.api_key.slice(0, 8) + '...' : '-'}</td>
+                        <td>${u.today_requests || 0}</td>
+                        <td>
+                            ${u.role === 'user' ? `<button class="btn btn-success" onclick="makeDev('${u.id}')">Make Dev</button>` : ''}
+                            ${u.role === 'developer' ? `<button class="btn btn-danger" onclick="demote('${u.id}')">Demote</button>` : ''}
+                            ${!u.banned_until ? `<button class="btn btn-danger" onclick="banUser('${u.id}')">Ban</button>` : ''}
+                        </td>
+                    </tr>
+                `).join('');
+                document.getElementById('usersTable').querySelector('tbody').innerHTML = userRows;
+            }
+            
+            // Load platforms
+            const platformsRes = await fetch('/admin/platforms');
+            const platforms = await platformsRes.json();
+            
+            if (platforms.success) {
+                const platformRows = platforms.platforms.map(p => `
+                    <tr>
+                        <td>${p.platform}</td>
+                        <td>
+                            <span class="platform-status ${p.available ? 'status-available' : (p.maintenance ? 'status-maintenance' : 'status-disabled')}"></span>
+                            ${p.available ? 'Available' : (p.maintenance ? 'Maintenance' : 'Disabled')}
+                        </td>
+                        <td>${p.today_requests || 0}</td>
+                        <td>
+                            <button class="btn" onclick="togglePlatform('${p.platform}', ${!p.available})">
+                                ${p.available ? 'Disable' : 'Enable'}
+                            </button>
+                            <button class="btn btn-danger" onclick="setMaintenance('${p.platform}', ${!p.maintenance})">
+                                ${p.maintenance ? 'Remove Maint' : 'Maintenance'}
+                            </button>
+                        </td>
+                    </tr>
+                `).join('');
+                document.getElementById('platformTable').querySelector('tbody').innerHTML = platformRows;
+            }
+        }
+        
+        async function makeDev(userId) {
+            const res = await fetch('/admin/users/make-dev', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId })
+            });
+            if (res.ok) loadAdminData();
+        }
+        
+        async function demote(userId) {
+            const res = await fetch('/admin/users/demote', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId })
+            });
+            if (res.ok) loadAdminData();
+        }
+        
+        async function banUser(userId) {
+            const reason = prompt('Ban reason:');
+            if (!reason) return;
+            const res = await fetch('/admin/users/ban', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId, reason, durationHours: 24 })
+            });
+            if (res.ok) loadAdminData();
+        }
+        
+        async function togglePlatform(platform, available) {
+            await fetch('/admin/platforms/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ platform, available, maintenance: false, error: false })
+            });
+            loadAdminData();
+        }
+        
+        async function setMaintenance(platform, maintenance) {
+            await fetch('/admin/platforms/update', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ platform, available: !maintenance, maintenance, error: false })
+            });
+            loadAdminData();
+        }
+        
+        async function copyAdminKey() {
+            const key = document.getElementById('adminApiKey').innerText;
+            await navigator.clipboard.writeText(key);
+            alert('Copied!');
+        }
+        
+        async function regenerateAdminKey() {
+            if (!confirm('Regenerate admin API key?')) return;
+            const res = await fetch('/user/regenerate-key', { method: 'POST' });
+            const data = await res.json();
+            if (data.success) {
+                document.getElementById('adminApiKey').innerText = data.api_key;
+                alert('New key generated!');
+            }
+        }
+        
+        // Load admin's own API key
+        async function loadAdminKey() {
+            const res = await fetch('/user/me');
+            const data = await res.json();
+            if (data.success && data.user.api_key) {
+                document.getElementById('adminApiKey').innerText = data.user.api_key;
+            } else {
+                document.getElementById('adminApiKey').innerText = 'No API key yet. Become developer first.';
+            }
+        }
+        
+        loadAdminKey();
+        loadAdminData();
+    </script>
+</body>
+</html>
